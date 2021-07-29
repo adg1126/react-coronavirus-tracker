@@ -1,49 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import { fetchDailyData } from '../api';
+import React from 'react';
+import _ from 'lodash';
 import { Line, Bar } from 'react-chartjs-2';
 import { Grid } from '@material-ui/core';
 import { useTheme } from '@material-ui/core/styles';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 
-export default function Chart({
-  countryData: { confirmed, recovered, deaths },
-  country
-}) {
+export default function Chart({ countryData, country }) {
   const theme = useTheme();
-  const matchesSM = useMediaQuery(theme.breakpoints.down('sm'));
-  const [dailyData, setDailyData] = useState([]);
-
-  useEffect(() => {
-    const fetchAPI = async () => {
-      setDailyData(await fetchDailyData());
-    };
-
-    fetchAPI();
-  });
+  const matchesMD = useMediaQuery(theme.breakpoints.down('md'));
 
   const renderLineChart = () =>
-    dailyData && dailyData.length ? (
+    countryData && countryData.length ? (
       <Line
         data={{
-          labels: dailyData.map(({ reportDate }) =>
+          labels: countryData.map(({ reportDate }) =>
             new Date(reportDate).toDateString()
           ),
           datasets: [
             {
-              data: dailyData.map(({ confirmed }) => confirmed),
+              data: countryData.map(({ confirmed }) => confirmed),
               label: 'Infected',
               borderColor: '#3333ff',
               fill: true
             },
             {
-              data: dailyData.map(({ deaths }) => deaths),
+              data: countryData.map(({ deaths }) => deaths),
               label: 'Deaths',
               borderColor: 'red',
               backgroundColor: 'rgba(255, 0, 0, 0.5)',
               fill: true
             },
             {
-              data: dailyData.map(({ recovered }) => recovered),
+              data: countryData.map(({ recovered }) => recovered),
               label: 'Recovered',
               borderColor: 'green',
               backgroundColor: 'rgba(0, 255, 0, 0.5)',
@@ -54,8 +42,10 @@ export default function Chart({
       />
     ) : null;
 
-  const renderBarChart = () =>
-    confirmed ? (
+  const renderBarChart = () => {
+    const { confirmed, recovered, deaths, lastUpdate } = countryData;
+
+    return confirmed && !_.isEmpty(confirmed) ? (
       <Bar
         data={{
           labels: ['Infected', 'Recovered', 'Deaths'],
@@ -73,14 +63,19 @@ export default function Chart({
         }}
         options={{
           legend: { display: false },
-          title: { display: true, text: `Current state in ${country}` }
+          title: {
+            display: true,
+            text: `Current state in ${country}. Last updated on ${new Date(
+              lastUpdate
+            ).toDateString()}`
+          }
         }}
       />
     ) : null;
-
+  };
   return (
     <Grid container justifyContent='center'>
-      <Grid item style={{ width: matchesSM ? '90vw' : '50vw' }}>
+      <Grid item style={{ width: matchesMD ? '90vw' : '50vw' }}>
         {country ? renderBarChart() : renderLineChart()}
       </Grid>
     </Grid>
